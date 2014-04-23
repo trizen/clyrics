@@ -2,8 +2,8 @@
 
 # Author: Daniel "Trizen" Șuteu
 # License: GPLv3
-# Created: 12th February 2013
-# Edited: 23th April 2014
+# Created: 12 February 2013
+# Edited:  23 April 2014
 # Wesbite: http://github.com/trizen/clyrics
 
 # clyrics: an extensible lyrics fetcher, with daemon support for cmus and mocp.
