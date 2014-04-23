@@ -1,0 +1,338 @@
+#!/usr/bin/perl
+
+# Author: Trizen
+# License: GPLv3
+# Created: 12 February 2013
+# Edited: 23 April 2014
+# Wesbite: http://github.com/clyrics
+
+# clyrics: an extensible lyrics fetcher, with daemon support for cmus and mocp.
+
+use utf8;
+use 5.010;
+use strict;
+use warnings;
+
+binmode(STDOUT, ':utf8');
+
+use WWW::Mechanize qw();
+use File::Basename qw(dirname basename);
+use HTML::Entities qw(decode_entities);
+use File::Spec::Functions qw(catdir rel2abs);
+use Getopt::Std qw(getopts);
+
+# Name and version
+my $name    = 'clyrics';
+my $version = '0.01';
+
+# Debug mode
+my $DEBUG = 0;
+sub DEBUG() { $DEBUG }
+
+# Sleep duration
+my $SLEEP_SECONDS = 3;
+
+# .config directory
+my $xdg_config_home = $ENV{XDG_CONFIG_HOME}
+  || catdir($ENV{HOME} || $ENV{LOGDIR} || (getpwuid($<))[7] || `echo -n ~`, '.config');
+
+# Plugins directory
+my $plugins_dir = catdir($xdg_config_home, $name);
+
+# Check the '/etc/xdg/' directory
+if (not -d $plugins_dir and -e "/etc/xdg/$name") {
+    $plugins_dir = "/etc/xdg/$name";
+}
+
+my %opt;
+if ($#ARGV != -1 and chr ord $ARGV[0] eq '-') {
+    getopts('hvdsP:mc', \%opt);
+}
+
+# Help
+if (exists $opt{h}) {
+    output_usage();
+    exit 0;
+}
+
+# Version
+if (exists $opt{v}) {
+    output_version();
+    exit 0;
+}
+
+# Debug mode
+if (exists $opt{d}) {
+    $DEBUG = 1;
+}
+
+# Sleep duration (in seconds)
+if (exists $opt{s}) {
+    if (defined $opt{s}) {
+        if ($opt{s} > 0) {
+            $SLEEP_SECONDS = $opt{s};
+        }
+        else {
+            die "error: invalid value `$opt{s}' for option '-s'. (requires a positive integer)\n";
+        }
+    }
+    else {
+        die "error: option '-s' requires an argument!\n";
+    }
+}
+
+# Plugins directory
+if (exists $opt{P}) {
+    if (defined $opt{P}) {
+        $plugins_dir = $opt{P};
+    }
+    else {
+        die "error: option '-P' requires an argument!\n";
+    }
+}
+
+# When the plugins directory does not exists
+if (not -d $plugins_dir) {
+    my $dirname = dirname(rel2abs($0));
+    if (-d (my $dir = catdir($dirname, 'plugins'))) {
+        $plugins_dir = $dir;
+    }
+}
+
+# Finally, die:
+if (not -d $plugins_dir) {
+    die <<"ERR";
+** Directory `$plugins_dir' does not exists!
+
+In order to run `$name', please create the required directory and copy the plugin files inside it.
+
+To load the plugins from other directory, use the following '-P' option.
+
+    Example:
+        $0 -P /home/user/my_plugins
+ERR
+}
+
+# Go inside the plugins directory
+chdir $plugins_dir
+  or die "Can't chdir in `$plugins_dir': $!";
+
+# Load the plugins
+my @plugins;
+foreach my $plugin_file (glob('*.pl')) {
+    load_plugin($plugin_file, \@plugins);
+}
+
+@plugins || die "error: can't find any valid plugin in dir: $plugins_dir\n";
+
+# mocp daemon
+if (exists $opt{m}) {
+    mocp_daemon();
+}
+
+# cmus daemon
+elsif (exists $opt{c}) {
+    cmus_daemon();
+}
+
+# song name from arguments
+else {
+    my $song_name = join(' ', @ARGV);
+    if (length($song_name)) {
+        my $lyrics = get_lyrics($song_name);
+        if (defined $lyrics) {
+            say $lyrics;
+        }
+    }
+    else {
+        output_usage();
+        exit 1;
+    }
+}
+
+sub output_usage {
+    print <<"USAGE";
+usage: $0 [options] [song name]
+
+options:
+        -m         : start as a daemon for moc player
+        -c         : start as a daemon for cmus player
+        -s <int>   : sleep duration between lyrics updates (default: $SLEEP_SECONDS)
+        -P <dir>   : plugin directory (default: $plugins_dir)
+
+        -d         : activate the debug mode
+        -v         : print version and exit
+        -h         : print this message and exit
+
+example:
+        $0 -m -s 1         # stars the mocp daemon
+        $0 not afraid      # prints the lyrics for "Eminem - Not Afraid"
+USAGE
+}
+
+sub output_version {
+    print "$name $version\n";
+}
+
+sub clear_title {
+    my ($title) = @_;
+    $title =~ s{\s*-\s*(\d+\s+)?}{ };
+    $title =~ s{^\d+(?>\.\s*|\s+)}{};
+    $title =~ s~(?:([<(\[{]).*?(??{$1 eq "(" ? '\)' : quotemeta(chr(ord($1) + 2)) })\s*)+$~~;
+    $title =~ s{\s+$}{};
+    $title =~ s{^VA }{};
+    return $title;
+}
+
+sub output_lyrics {
+    my ($title) = @_;
+
+    system('reset') == 0 or print "\e[H\e[J\e[H";
+    print STDERR "** Title: <$title>\n" if DEBUG;
+
+    my $lyrics = get_lyrics($title);
+
+    if (defined($lyrics)) {
+        say $lyrics;
+    }
+    else {
+        print STDERR "** Can't find lyrics for song <$title>\n";
+    }
+}
+
+# MOC Player daemon
+sub mocp_daemon {
+    my $old_title = '';
+
+    {
+        my $info = `mocp --info &>/dev/stdout` // die "[!] moc player is not installed!\n";
+        my ($title) = $info =~ m{^Title:\h+(.+)}m;
+
+        if (not defined $title) {
+            if ($info =~ m{^File:\h+(.+)}m) {
+                my $basename = basename($1);
+                $basename =~ s{\.\w+\z}{};
+                $title = $basename;
+            }
+        }
+
+        $title // do { sleep $SLEEP_SECONDS; redo };
+        $title = clear_title($title);
+
+        if ($old_title ne $title) {
+            output_lyrics($title);
+        }
+
+        $old_title = $title;
+        sleep $SLEEP_SECONDS;
+        redo;
+    }
+}
+
+# cmus daemon
+sub cmus_daemon {
+    my $old_title = '';
+
+    {
+        my $info = `cmus-remote -Q &>/dev/stdout` // die "[!] cmus player is not installed!\n";
+
+        my @title;
+        if ($info =~ /^tag artist (.+)/m) {
+            push @title, $1;
+        }
+        if ($info =~ /^tag title (.+)/m) {
+            push @title, $1;
+        }
+        else {
+            @title = ();
+            if ($info =~ /^file (.+)/m) {
+                my $basename = basename($1);
+                $basename =~ s{\.\w+\z}{};
+                push @title, $basename;
+            }
+        }
+
+        @title || die "[!] cmus isn't playing any song...\n";
+
+        my $title = clear_title(join(' ', @title));
+
+        if ($old_title ne $title) {
+            output_lyrics($title);
+        }
+
+        $old_title = $title;
+        sleep $SLEEP_SECONDS;
+        redo;
+    }
+}
+
+# Get the lyrics of a song
+sub get_lyrics {
+    my ($song_name) = @_;
+
+    my $mech = WWW::Mechanize->new(show_progress => DEBUG,
+                                   autocheck     => DEBUG,);
+
+    $mech->get('https://google.com/');
+    $mech->submit_form(
+                       form_name => 'f',
+                       fields    => {
+                                  q => "$song_name lyrics",
+                                 },
+                       button => 'btnG',
+                      );
+
+    foreach my $hash_ref (@plugins) {
+        if (defined(my $link = $mech->find_link(url_regex => $hash_ref->{url_regex}))) {
+            my $req  = $mech->get($link->url());
+            my $text = $hash_ref->{code}(scalar $req->decoded_content);
+
+            if (defined($text)) {
+                return unpack 'A*', $text;
+            }
+            else {
+                $mech->back();
+            }
+        }
+    }
+
+    return;
+}
+
+# Load a plugin and store it inside an array
+sub load_plugin {
+    my ($file, $array) = @_;
+
+    my $struct = do($file) || do {
+        warn "Can't load plugin `$file': ", ($! || $@);
+        return;
+    };
+
+    if (ref($struct) ne 'HASH') {
+        warn "error: Invalid plugin `$file': does not end with a HASH ref!\n";
+        return;
+    }
+
+    if (not exists($struct->{url_regex})) {
+        warn "error: Invalid plugin `$file': can't find the 'url_regex' key!\n";
+        return;
+    }
+
+    if (ref($struct->{url_regex}) ne ref(qr//)) {
+        warn "error: Invalid plugin `$file': the value for 'url_regex' must be a compiled regular expression!\n";
+        return;
+    }
+
+    if (not exists($struct->{code})) {
+        warn "error: Invalid plugin `$file': can't find the 'code' key!\n";
+        return;
+    }
+
+    if (ref($struct->{code}) ne 'CODE') {
+        warn "error: Invalid plugin `$file': the value for 'code' must be an anonymous subroutine!\n";
+        return;
+    }
+
+    push @{$array}, $struct;
+    return 1;
+}
