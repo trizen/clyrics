@@ -206,7 +206,11 @@ sub mocp_daemon {
 
     {
         my $info = `mocp --info &>/dev/stdout` // die "[!] moc player is not installed!\n";
-        my ($title) = $info =~ m{^Title:\h+(.+)}m;
+        my ($title) = $info =~ /^Title:\h+(.+)/m;
+
+        if ($info =~ /^FATAL_ERROR: The server is not running!/m) {
+            die $info;
+        }
 
         if (not defined $title) {
             if ($info =~ m{^File:\h+(.+)}m) {
