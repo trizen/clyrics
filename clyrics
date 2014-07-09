@@ -207,7 +207,8 @@ sub mocp_daemon {
 
     {
         my $info = `mocp --info &>/dev/stdout` // die "[!] moc player is not installed!\n";
-        my ($title) = $info =~ /^Title:\h+(.+)/m;
+	my @song = ($info =~ /^Artist:\h+(.+)/m, $info =~ /^SongTitle:\h+(.+)/m);
+        my ($title) = join(" ", @song);
 
         if ($info =~ /^FATAL_ERROR: The server is not running!/m) {
             die $info;
