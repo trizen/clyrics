@@ -7,12 +7,12 @@
  code      => sub {
      my ($content) = @_;
 
-     if ($content =~ m{</p><br\h*/>(.*?)<div}si) {
+     if ($content =~ m{</p><br\h*/>(.*?)<(?:script|div)\b}si) {
          my $lyrics = $1;
          $lyrics =~ s{<.*?>}{}sg;
          return decode_entities($lyrics);
      }
 
      return;
-   }
+ }
 }

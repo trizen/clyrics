@@ -14,8 +14,8 @@ usage: clyrics [options] [song name]
 options:
         -m         : start as a daemon for moc player
         -c         : start as a daemon for cmus player
-        -s <int>   : sleep duration between lyrics updates (default: $SLEEP_SECONDS)
-        -P <dir>   : plugin directory (default: $plugins_dir)
+        -s <int>   : sleep duration between lyrics updates (default: 3)
+        -P <dir>   : plugin directory (default: ~/.config/clyrics)
 
         -d         : activate the debug mode
         -v         : print version and exit
