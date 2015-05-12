@@ -24,7 +24,7 @@ use Getopt::Std qw(getopts);
 
 # Name and version
 my $name    = 'clyrics';
-my $version = 0.03;
+my $version = 0.04;
 
 # Debug mode
 my $DEBUG = 0;
@@ -304,7 +304,7 @@ sub get_lyrics {
             # Print any error encountered while decoding the HTML content
             warn $@ if $@;
 
-            if (defined($text)) {
+            if (defined($text) and length($text) > 360) {    # just messing with you
                 return unpack 'A*', $text;
             }
             else {

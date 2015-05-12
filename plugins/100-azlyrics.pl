@@ -7,9 +7,10 @@
  code      => sub {
      my ($content) = @_;
 
-     if ($content =~ m{<!--\s*start of lyrics\s*-->(.*?)<!--\s*end of lyrics\s*-->}is) {
+     if ($content =~ m{<span.+?id="cf_text_top".*?></span>.*?<div>(.*?)</div>}is) {
          my $lyrics = $1;
          $lyrics =~ s{<.*?>}{}sg;
+         $lyrics =~ s/^\s+//;
          return $lyrics;
      }
 
