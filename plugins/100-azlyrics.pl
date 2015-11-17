@@ -11,7 +11,7 @@
          my $lyrics = $1;
          $lyrics =~ s{<.*?>}{}sg;
          $lyrics =~ s/^\s+//;
-         return $lyrics;
+         return decode_entities($lyrics);
      }
 
      return;
