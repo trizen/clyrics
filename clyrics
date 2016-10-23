@@ -24,7 +24,7 @@ use Getopt::Std qw(getopts);
 
 # Name and version
 my $name    = 'clyrics';
-my $version = 0.04;
+my $version = 0.05;
 
 # Debug mode
 my $DEBUG = 0;
