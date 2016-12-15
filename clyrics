@@ -188,7 +188,7 @@ sub clear_title {
 sub output_lyrics {
     my ($title) = @_;
 
-    system('reset') == 0 or print "\e[H\e[J\e[H";
+    system('reset -Q') == 0 or print "\e[H\e[J\e[H";
     print STDERR "** Title: <$title>\n" if DEBUG;
 
     my $lyrics = get_lyrics($title);
