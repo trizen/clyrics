@@ -215,9 +215,9 @@ sub mocp_daemon {
         }
 
         if (not $title =~ /\S/) {
-            if ($info =~ m{^File:\h+(.+)}m) {
+            if ($info =~ /^File:\h+(.+)/m) {
                 my $basename = basename($1);
-                $basename =~ s{\.\w+\z}{};
+                $basename =~ s/\.\w+\z//;
                 $title = $basename;
             }
         }
