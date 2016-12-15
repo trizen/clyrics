@@ -47,7 +47,7 @@ if (not -d $plugins_dir and -e "/usr/share/$name") {
 
 my %opt;
 if ($#ARGV != -1 and chr ord $ARGV[0] eq '-') {
-    getopts('hvdsP:mc', \%opt);
+    getopts('hvds:P:mc', \%opt);
 }
 
 # Help
