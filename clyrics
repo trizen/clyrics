@@ -285,14 +285,14 @@ sub get_lyrics {
                                      . '(KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53',
                                   );
 
-    my $sites = join(' OR ', map { "site:$_->{site}" } @plugins);
+    state $sites = decode_utf8(join(' OR ', map { "site:$_->{site}" } @plugins));
 
     $mech->get('https://google.com/');
     $mech->submit_form(
                        form_name => 'f',
                        fields    => {
                                   ie => 'UTF-8',
-                                  q  => decode_utf8("$song_name $sites"),
+                                  q  => lc(decode_utf8($song_name)) . ' ' . $sites,
                                  },
                        button => 'btnG',
                       );
