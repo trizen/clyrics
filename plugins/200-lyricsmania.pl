@@ -2,17 +2,20 @@
 ## lyricsmania.com support
 #
 
-{
- url_regex => qr{\blyricsmania\.com\b},
- code      => sub {
-     my ($content) = @_;
+use strict;
+use warnings;
 
-     if ($content =~ m{<div\h+class="lyrics-body".*?</strong>\s*(.*?)</div>}si) {
-         my $lyrics = $1;
-         $lyrics =~ s{<.*?>}{}sg;
-         return $lyrics;
-     }
+scalar {
+    site => 'lyricsmania.com',
+    code => sub {
+        my ($content) = @_;
 
-     return;
- }
-}
+        if ($content =~ m{<div\h+class="lyrics-body".*?</strong>\s*(.*?)</div>}si) {
+            my $lyrics = $1;
+            $lyrics =~ s{<.*?>}{}sg;
+            return $lyrics;
+        }
+
+        return;
+    }
+  }

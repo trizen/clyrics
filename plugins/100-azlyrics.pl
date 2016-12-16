@@ -2,18 +2,21 @@
 ## azlyrics.com support
 #
 
-{
- url_regex => qr/\bazlyrics\.com\b/,
- code      => sub {
-     my ($content) = @_;
+use strict;
+use warnings;
 
-     if ($content =~ m{<span.+?id="cf_text_top".*?></span>.*?<div>(.*?)</div>}is) {
-         my $lyrics = $1;
-         $lyrics =~ s{<.*?>}{}sg;
-         $lyrics =~ s/^\s+//;
-         return decode_entities($lyrics);
-     }
+scalar {
+    site => 'azlyrics.com',
+    code => sub {
+        my ($content) = @_;
 
-     return;
- }
-}
+        if ($content =~ m{<span.+?id="cf_text_top".*?></span>.*?<div>(.*?)</div>}is) {
+            my $lyrics = $1;
+            $lyrics =~ s{<.*?>}{}sg;
+            $lyrics =~ s/^\s+//;
+            return decode_entities($lyrics);
+        }
+
+        return;
+    }
+  }

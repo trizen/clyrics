@@ -1,16 +1,16 @@
 #
-## releaselyrics.com support
+## songlyrics.com support
 #
 
 use strict;
 use warnings;
 
 scalar {
-    site => 'releaselyrics.com',
+    site => 'songlyrics.com',
     code => sub {
         my ($content) = @_;
 
-        if ($content =~ m{class="content-lyrics".*?>(.*?)</div>}is) {
+        if ($content =~ m{id="songLyricsDiv-outer".*?<p.*?>(.*?)</p>}si) {
             my $lyrics = $1;
             $lyrics =~ s{<.*?>}{}sg;
             return $lyrics;

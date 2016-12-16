@@ -2,19 +2,22 @@
 ## val.fm support
 #
 
-{
- url_regex => qr{\bval\.fm\b},
- code      => sub {
-     my ($content) = @_;
+use strict;
+use warnings;
 
-     if ($content =~ m{class="song-text.*?>(.*?)</div>}si) {
-         my $lyrics = $1;
-         $lyrics =~ s{<p\s+class=['"]verse['"]>}{\n\n}gi;
-         $lyrics =~ s{<.*?>}{}sg;
-         return if unpack('A*', $lyrics) eq '';
-         return $lyrics;
-     }
+scalar {
+    site => 'val.fm',
+    code => sub {
+        my ($content) = @_;
 
-     return;
- }
-}
+        if ($content =~ m{class="song-text.*?>(.*?)</div>}si) {
+            my $lyrics = $1;
+            $lyrics =~ s{<p\s+class=['"]verse['"]>}{\n\n}gi;
+            $lyrics =~ s{<.*?>}{}sg;
+            return if unpack('A*', $lyrics) eq '';
+            return $lyrics;
+        }
+
+        return;
+    }
+  }

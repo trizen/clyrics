@@ -1,18 +1,18 @@
 #
-## releaselyrics.com support
+## rapgenius.com support
 #
 
 use strict;
 use warnings;
 
 scalar {
-    site => 'releaselyrics.com',
+    site => 'rapgenius.com',
     code => sub {
         my ($content) = @_;
 
-        if ($content =~ m{class="content-lyrics".*?>(.*?)</div>}is) {
+        if ($content =~ m{<lyrics\s+class="lyrics".*?>\s*(.*?)</lyrics>}si) {
             my $lyrics = $1;
-            $lyrics =~ s{<.*?>}{}sg;
+            $lyrics =~ s{<.*?>}{}gs;
             return $lyrics;
         }
 

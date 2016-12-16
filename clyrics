@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 
-# Author: Daniel "Trizen" Șuteu
+# Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Edited:  29 September 2014
+# Edited : 16 December 2016
 # Wesbite: http://github.com/trizen/clyrics
 
-# clyrics: an extensible lyrics fetcher, with daemon support for cmus and mocp.
+# An extensible lyrics fetcher, with daemon support for cmus and mocp.
 
 use utf8;
 use 5.010;
@@ -24,7 +24,7 @@ use Getopt::Std qw(getopts);
 
 # Name and version
 my $name    = 'clyrics';
-my $version = 0.05;
+my $version = 0.06;
 
 # Debug mode
 my $DEBUG = 0;
@@ -180,9 +180,8 @@ sub clear_title {
     $title =~ s{\s*-\s*(\d+\s+)?}{ };
     $title =~ s{^\d+(?>\.\s*|\s+)}{};
     $title =~ s~(?:([<(\[{]).*?(??{$1 eq "(" ? '\)' : quotemeta(chr(ord($1) + 2)) })\s*)+$~~;
-    $title =~ s{\s+$}{};
     $title =~ s{^VA }{};
-    return $title;
+    return join(' ', split(' ', $title));
 }
 
 sub output_lyrics {
@@ -283,12 +282,14 @@ sub get_lyrics {
                                      . '(KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53',
                                   );
 
+    my $sites = join(' OR ', map { "site:$_->{site}" } @plugins);
+
     $mech->get('https://google.com/');
     $mech->submit_form(
                        form_name => 'f',
                        fields    => {
                                   ie => 'UTF-8',
-                                  q  => decode_utf8("$song_name lyrics"),
+                                  q  => decode_utf8("$song_name $sites"),
                                  },
                        button => 'btnG',
                       );
@@ -296,15 +297,15 @@ sub get_lyrics {
     # Fake the user-agent to a desktop browser
     $mech->agent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36');
 
-    foreach my $hash_ref (@plugins) {
-        if (defined(my $link = $mech->find_link(url_regex => $hash_ref->{url_regex}))) {
+    foreach my $plugin (@plugins) {
+        if (defined(my $link = $mech->find_link(url_regex => qr/:\/\/(www\.)?\Q$plugin->{site}\E\b/i))) {
             my $req  = $mech->get($link->url());
-            my $text = $hash_ref->{code}(scalar $req->decoded_content);
+            my $text = $plugin->{code}(scalar $req->decoded_content);
 
             # Print any error encountered while decoding the HTML content
             warn $@ if $@;
 
-            if (defined($text) and length($text) > 360) {    # just messing with you
+            if (defined($text) and length($text) > 360) {
                 return unpack 'A*', $text;
             }
             else {
@@ -326,27 +327,52 @@ sub load_plugin {
     };
 
     if (ref($struct) ne 'HASH') {
-        warn "error: Invalid plugin `$file': does not end with a HASH ref!\n";
+        warn "Invalid plugin `$file': does not end with a HASH ref!\n";
         return;
     }
 
-    if (not exists($struct->{url_regex})) {
-        warn "error: Invalid plugin `$file': can't find the 'url_regex' key!\n";
+    # This field is deprecated and will be removed in a future release.
+    if (exists($struct->{url_regex})) {
+        my $str = "$struct->{url_regex}";
+
+        if ($str =~ /^\(.*?:(?:\\b)?(.*?)(?:\\b)?\)\z/) {
+            my $site = $1;
+            $site =~ s/\\(.)/$1/g;
+            $struct->{site} = $site;
+        }
+        else {
+            warn <<"EOT";
+The <<url_regex>> field has been deprecated and will be removed in a future version of clyrics.
+
+Use the <<site>> field instead, as:
+
+    site => 'example.net',
+
+You're seeing this warning because the compatibility code failed to recover the original site,
+therefore the plugin `$file' will be ignored...
+EOT
+
+            return;
+        }
+    }
+
+    if (not exists($struct->{site})) {
+        warn "Invalid plugin `$file': the <<site>> field is not defined!\n";
         return;
     }
 
-    if (ref($struct->{url_regex}) ne ref(qr//)) {
-        warn "error: Invalid plugin `$file': the value for 'url_regex' must be a compiled regular expression!\n";
+    if (ref($struct->{site}) ne '' or !length($struct->{site}) or $struct->{site} !~ /\w\.\w/) {
+        warn "Invalid plugin `$file': invalid value for the <<site>> field!\n";
         return;
     }
 
     if (not exists($struct->{code})) {
-        warn "error: Invalid plugin `$file': can't find the 'code' key!\n";
+        warn "Invalid plugin `$file': the <<code>> field is not defined!\n";
         return;
     }
 
     if (ref($struct->{code}) ne 'CODE') {
-        warn "error: Invalid plugin `$file': the value for 'code' must be an anonymous subroutine!\n";
+        warn "Invalid plugin `$file': the value for <<code>> must be an anonymous subroutine!\n";
         return;
     }
 

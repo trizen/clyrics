@@ -2,17 +2,20 @@
 ## versuri.ro support
 #
 
-{
- url_regex => qr{\bversuri\.ro\b},
- code      => sub {
-     my ($content) = @_;
+use strict;
+use warnings;
 
-     if ($content =~ m{<div id="pagecontent">.*?</script>(.*?)<!-- }si) {
-         my $lyrics = $1;
-         $lyrics =~ s{<.*?>}{}sg;
-         return decode_entities($lyrics);
-     }
+scalar {
+    site => 'versuri.ro',
+    code => sub {
+        my ($content) = @_;
 
-     return;
- }
-}
+        if ($content =~ m{<div id="pagecontent">.*?</script>(.*?)<!-- }si) {
+            my $lyrics = $1;
+            $lyrics =~ s{<.*?>}{}sg;
+            return decode_entities($lyrics);
+        }
+
+        return;
+    }
+  }

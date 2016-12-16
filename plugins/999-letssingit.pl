@@ -2,17 +2,20 @@
 ## artists.letssingit.com support
 #
 
-{
- url_regex => qr{\bartists\.letssingit\.com\b},
- code      => sub {
-     my ($content) = @_;
+use strict;
+use warnings;
 
-     if ($content =~ m{\bid=lyrics\b.*?">(.*?)</DIV>}is) {
-         my $lyrics = $1;
-         $lyrics =~ s{<.*?>}{}sg;
-         return $lyrics;
-     }
+scalar {
+    site => 'artists.letssingit.com',
+    code => sub {
+        my ($content) = @_;
 
-     return;
-   }
-}
+        if ($content =~ m{\bid=lyrics\b.*?">(.*?)</DIV>}is) {
+            my $lyrics = $1;
+            $lyrics =~ s{<.*?>}{}sg;
+            return $lyrics;
+        }
+
+        return;
+    }
+  }
