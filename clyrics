@@ -298,7 +298,7 @@ sub get_lyrics {
                       );
 
     # Fake the user-agent to a desktop browser
-    $mech->agent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36');
+    $mech->agent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36');
 
     foreach my $plugin (@plugins) {
         if (defined(my $link = $mech->find_link(url_regex => qr/:\/\/(www\.)?\Q$plugin->{site}\E\b/i))) {
