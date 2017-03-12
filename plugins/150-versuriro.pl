@@ -13,7 +13,7 @@ scalar {
         if ($content =~ m{<div id="pagecontent">.*?</script>(.*?)<!-- }si) {
             my $lyrics = $1;
             $lyrics =~ s{<.*?>}{}sg;
-            return decode_entities($lyrics);
+            return $lyrics;
         }
 
         return;

@@ -14,7 +14,7 @@ scalar {
             my $lyrics = $1;
             $lyrics =~ s{<.*?>}{}sg;
             $lyrics =~ s/^\s+//;
-            return decode_entities($lyrics);
+            return $lyrics;
         }
 
         return;

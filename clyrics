@@ -275,6 +275,7 @@ sub cmus_daemon {
 sub get_lyrics {
     my ($song_name) = @_;
 
+    $song_name = decode_utf8($song_name);
     $song_name =~ tr/-/ /;
     $song_name = join(' ', split(' ', $song_name));
 
@@ -292,7 +293,7 @@ sub get_lyrics {
                        form_name => 'f',
                        fields    => {
                                   ie => 'UTF-8',
-                                  q  => lc(decode_utf8($song_name)) . ' ' . $sites,
+                                  q  => lc($song_name) . ' ' . $sites,
                                  },
                        button => 'btnG',
                       );
@@ -306,10 +307,12 @@ sub get_lyrics {
             my $text = $plugin->{code}(scalar $req->decoded_content);
 
             # Print any error encountered while decoding the HTML content
-            warn $@ if $@;
+            if (DEBUG) {
+                warn $@ if $@;
+            }
 
             if (defined($text) and length($text) > 360) {
-                return unpack 'A*', $text;
+                return unpack 'A*', decode_entities($text);
             }
             else {
                 $mech->back();

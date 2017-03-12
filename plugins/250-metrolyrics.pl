@@ -16,7 +16,7 @@ scalar {
             $lyrics =~ s{<.*?>}{}sg;
             return if unpack('A*', $lyrics) eq '';
             $lyrics =~ s/\R\R\R+/\n\n/g;
-            return decode_entities($lyrics);
+            return $lyrics;
         }
 
         return;
