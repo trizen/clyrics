@@ -7,7 +7,6 @@ An extensible lyrics fetcher, with daemon support for cmus and mocp.
   - support for plugins
   - cmus and mocp daemon mode
 
-
 ```
 usage: clyrics [options] [song name]
 
@@ -25,3 +24,12 @@ example:
         clyrics -m -s 1         # stars the mocp daemon
         clyrics not afraid      # prints the lyrics for "Eminem - Not Afraid"
 ```
+
+### Dependencies:
+
+* [WWW::Mechanize](https://metacpan.org/release/WWW-Mechanize)
+* [LWP::Protocol::https](https://metacpan.org/release/LWP-Protocol-https)
+
+### Availability:
+
+AUR: https://aur.archlinux.org/packages/clyrics/
