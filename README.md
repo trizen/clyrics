@@ -3,7 +3,7 @@ clyrics
 
 An extensible lyrics fetcher, with daemon support for cmus and mocp.
 
-* Main features include:
+### Features:
   - support for plugins
   - cmus and mocp daemon mode
   
