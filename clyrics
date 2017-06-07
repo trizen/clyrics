@@ -286,7 +286,7 @@ sub get_lyrics {
 
     $mech->get('https://google.com/');
     $mech->submit_form(
-                       form_number => 0,
+                       form_number => 1,
                        fields      => {
                                   ie => 'UTF-8',
                                   q  => lc($song_name) . ' ' . $sites,
