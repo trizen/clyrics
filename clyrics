@@ -114,13 +114,9 @@ To load the plugins from other directory, use the following '-P' option.
 ERR
 }
 
-# Go inside the plugins directory
-chdir $plugins_dir
-  or die "Can't chdir in `$plugins_dir': $!";
-
 # Load the plugins
 my @plugins;
-foreach my $plugin_file (glob('*.pl')) {
+foreach my $plugin_file (glob("$plugins_dir/*.pl")) {
     load_plugin($plugin_file, \@plugins);
 }
 
@@ -290,8 +286,8 @@ sub get_lyrics {
 
     $mech->get('https://google.com/');
     $mech->submit_form(
-                       form_name => 'f',
-                       fields    => {
+                       form_number => 0,
+                       fields      => {
                                   ie => 'UTF-8',
                                   q  => lc($song_name) . ' ' . $sites,
                                  },
