@@ -10,7 +10,7 @@ scalar {
     code => sub {
         my ($content) = @_;
 
-        if ($content =~ m{<lyrics\s+class="lyrics".*?>\s*(.*?)</lyrics>}si) {
+        if ($content =~ m{<div class="lyrics">(.*?)</div>}si) {
             my $lyrics = $1;
             $lyrics =~ s{<.*?>}{}gs;
             return $lyrics;
