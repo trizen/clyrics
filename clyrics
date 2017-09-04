@@ -85,7 +85,7 @@ if (exists $opt{s}) {
 # Plugins directory
 if (exists $opt{P}) {
     if (defined $opt{P}) {
-        $plugins_dir = $opt{P};
+        $plugins_dir = rel2abs($opt{P});
     }
     else {
         die "error: option '-P' requires an argument!\n";
@@ -94,7 +94,7 @@ if (exists $opt{P}) {
 
 # When the plugins directory does not exists
 if (not -d $plugins_dir) {
-    my $dirname = dirname(rel2abs($0));
+    my $dirname = rel2abs(dirname(rel2abs($0)));
     if (-d (my $dir = catdir($dirname, 'plugins'))) {
         $plugins_dir = $dir;
     }
@@ -162,8 +162,8 @@ options:
         -h         : print this message and exit
 
 example:
-        $0 -m -s 1         # stars the mocp daemon
-        $0 not afraid      # prints the lyrics for "Eminem - Not Afraid"
+        $0 -m -s 1             # stars the mocp daemon
+        $0 dust of the chase   # prints the lyrics of "RWH - Dust of the chase"
 USAGE
 }
 
