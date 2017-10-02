@@ -26,8 +26,8 @@ options:
         -h         : print this message and exit
 
 example:
-        clyrics -m -s 1         # stars the mocp daemon
-        clyrics not afraid      # prints the lyrics for "Eminem - Not Afraid"
+        clyrics -m -s 1             # stars the mocp daemon
+        clyrics dust of the chase   # prints the lyrics of "RWH - Dust of the chase"
 ```
 
 ### Availability:
