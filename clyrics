@@ -3,7 +3,7 @@
 # Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Edited : 12 November 2017
+# Updated: 03 March 2018
 # Wesbite: http://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
@@ -14,7 +14,7 @@
 # expressions and a little bit of Perl, can add more plugins for various other
 # lyrics websites, using the general structure found in the provided plugins.
 
-# We are planning on switching to DuckDuckGo in the next version.
+# We are planning on switching to DuckDuckGo in the future.
 
 use utf8;
 use 5.010;
@@ -33,7 +33,7 @@ use Time::HiRes qw(sleep);
 
 # Name and version
 my $name    = 'clyrics';
-my $version = 0.09;
+my $version = '0.10';
 
 # Debug mode
 my $DEBUG = 0;
@@ -300,11 +300,10 @@ sub get_lyrics {
                                   ie => 'UTF-8',
                                   q  => lc($song_name) . ' ' . $sites,
                                  },
-                       button => 'btnG',
                       );
 
     # Fake the user-agent to a desktop browser
-    $mech->agent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36');
+    $mech->agent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36');
 
     foreach my $plugin (@plugins) {
         if (defined(my $link = $mech->find_link(url_regex => qr/:\/\/(?:www\.)?\Q$plugin->{site}\E\b/i))) {
