@@ -30,6 +30,7 @@ use HTML::Entities qw(decode_entities);
 use File::Spec::Functions qw(catdir rel2abs);
 use Getopt::Std qw(getopts);
 use Time::HiRes qw(sleep);
+use Win32;
 
 # Name and version
 my $name    = 'clyrics';
@@ -43,9 +44,16 @@ sub DEBUG() { $DEBUG }
 my $SLEEP_SECONDS = 3;
 
 # .config directory
-my $xdg_config_home = $ENV{XDG_CONFIG_HOME}
-  || catdir($ENV{HOME} || $ENV{LOGDIR} || (getpwuid($<))[7] || `echo -n ~`, '.config');
-
+if($^O  == "linux")
+{
+        my $xdg_config_home = $ENV{XDG_CONFIG_HOME}
+        || catdir($ENV{HOME} || $ENV{LOGDIR} || (getpwuid($<))[7] || `echo -n ~`, '.config');
+}
+else
+{
+        my $xdg_config_home = $ENV{XDG_CONFIG_HOME}
+        || catdir($ENV{HOME} || $ENV{LOGDIR} || (Win32::LoginName($<))[7] || `echo -n ~`, '.config');
+}
 # Plugins directory
 my $plugins_dir = catdir($xdg_config_home, $name);
 
