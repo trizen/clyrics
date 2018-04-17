@@ -1,4 +1,4 @@
-clyrics
+clyrics Fork "wlyrics"
 =======
 
 An extensible lyrics fetcher, with daemon support for cmus and mocp.
