@@ -6,7 +6,7 @@ An extensible lyrics fetcher, with daemon support for cmus and mocp.
 ### Features:
   - support for plugins
   - cmus and mocp daemon mode
-  
+
 ### Dependencies:
 
 * [WWW::Mechanize](https://metacpan.org/release/WWW-Mechanize)
@@ -27,7 +27,7 @@ options:
 
 example:
         clyrics -m -s 1             # stars the mocp daemon
-        clyrics dust of the chase   # prints the lyrics of "RWH - Dust of the chase"
+        clyrics eminem not afraid   # prints the lyrics of "Eminem - Not Afraid"
 ```
 
 ### Availability:
