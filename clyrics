@@ -313,7 +313,7 @@ sub get_lyrics {
             warn $@ if ($DEBUG and $@);
 
             if (defined($text) and length($text) > 360) {
-                $text =~ s/^(?:\h*\R)+//;    # remove leading newlines
+                $text =~ s/^(?:\h*\R)+\h*//;    # remove leading newlines and spaces
                 return unpack 'A*', decode_entities($text);
             }
             else {
