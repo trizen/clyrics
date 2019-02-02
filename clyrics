@@ -55,7 +55,7 @@ if (not -d $plugins_dir and -e "/usr/share/$name") {
 
 my %opt;
 if ($#ARGV != -1 and chr ord $ARGV[0] eq '-') {
-    getopts('hvds:P:mc', \%opt);
+    getopts('hvds:P:mcp', \%opt);
 }
 
 # Help
@@ -140,6 +140,10 @@ elsif (exists $opt{c}) {
     cmus_daemon();
 }
 
+elsif (exists $opt{p}) {
+    playerctl_daemon();
+}
+
 # song name from arguments
 else {
     my $song_name = join(' ', @ARGV);
@@ -162,6 +166,7 @@ usage: $0 [options] [song name]
 options:
         -m         : start as a daemon for moc player
         -c         : start as a daemon for cmus player
+        -p         : start as a daemon for playerctl media controller
         -s <int>   : sleep duration between lyrics updates (default: $SLEEP_SECONDS)
         -P <dir>   : plugin directory (default: $plugins_dir)
 
@@ -264,6 +269,31 @@ sub cmus_daemon {
         @title || die "[!] cmus isn't playing any song...\n";
 
         my $title = clear_title(join(' ', @title));
+
+        if ($old_title ne $title) {
+            output_lyrics($title);
+        }
+
+        $old_title = $title;
+        sleep $SLEEP_SECONDS;
+        redo;
+    }
+}
+
+# playerctl daemon
+sub playerctl_daemon {
+    my $old_title = '';
+
+    {
+        my $info = `playerctl metadata --format '{{artist}}\n{{title}}\n{{status}}' &>/dev/stdout`
+            // die "[!] playerctl is not installed!\n";
+        my ($artist, $title, $status) = split /\n/, $info;
+
+        if ($status ne "Playing") {
+            die "[!] primary playerctl player not playing any song...\n";
+        }
+
+        my $title = clear_title("$artist $title");
 
         if ($old_title ne $title) {
             output_lyrics($title);
