@@ -5,7 +5,7 @@ An extensible lyrics fetcher, with daemon support for cmus and mocp.
 
 ### Features:
   - support for plugins
-  - cmus and mocp daemon mode
+  - cmus, mocp and playerctl daemon mode
 
 ### Dependencies:
 
@@ -18,7 +18,8 @@ usage: clyrics [options] [song name]
 options:
         -m         : start as a daemon for moc player
         -c         : start as a daemon for cmus player
-        -s <int>   : sleep duration between lyrics updates (default: 3)
+        -p         : start as a daemon for playerctl media controller
+        -s <int>   : sleep duration between lyrics updates (default: 1)
         -P <dir>   : plugin directory (default: ~/.config/clyrics)
 
         -d         : activate the debug mode
