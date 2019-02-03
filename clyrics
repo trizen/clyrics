@@ -190,6 +190,7 @@ sub output_version {
 
 sub clear_title {
     my ($title) = @_;
+    $title = join(' ', split(' ', $title));
     $title =~ s{\s*-\s*(\d+\s+)?}{ };
     $title =~ s{^\d+(?>\.\s*|\s+)}{};
     $title =~ s~(?:([<(\[{]).*?(??{$1 eq "(" ? '\)' : quotemeta(chr(ord($1) + 2)) })\s*)+$~~;
@@ -213,31 +214,16 @@ sub output_lyrics {
     }
 }
 
-# MOC Player daemon
-sub mocp_daemon {
+sub daemon_loop {
+    my ($callback) = @_;
+
     my $old_title = '';
 
     {
-        my $info = `mocp --info &>/dev/stdout`;
-        $? and die "[!] moc player is not installed!\n";
+        my $title = $callback->();
 
-        my @song = ($info =~ /^Artist:\h+(.+)/m, $info =~ /^SongTitle:\h+(.+)/m);
-        my ($title) = join(" ", @song);
-
-        if ($info =~ /^FATAL_ERROR: The server is not running!/m) {
-            die $info;
-        }
-
-        if (not $title =~ /\S/) {
-            if ($info =~ /^File:\h+(.+)/m) {
-                my $basename = basename($1);
-                $basename =~ s/\.\w+\z//;
-                $title = $basename;
-            }
-        }
-
-        $title =~ /\S/ or do { sleep $SLEEP_SECONDS; redo };
         $title = clear_title($title);
+        $title =~ /\S/ or do { sleep $SLEEP_SECONDS; redo };
 
         if ($old_title ne $title) {
             output_lyrics($title);
@@ -247,70 +233,84 @@ sub mocp_daemon {
         sleep $SLEEP_SECONDS;
         redo;
     }
+}
+
+# MOC Player daemon
+sub mocp_daemon {
+
+    daemon_loop(
+        sub {
+
+            my $info = `mocp --info &>/dev/stdout`;
+            $? and die "[!] moc player is not installed!\n";
+
+            my @song = ($info =~ /^Artist:\h+(.+)/m, $info =~ /^SongTitle:\h+(.+)/m);
+            my ($title) = join(" ", @song);
+
+            if ($info =~ /^FATAL_ERROR: The server is not running!/m) {
+                die $info;
+            }
+
+            if (not $title =~ /\S/) {
+                if ($info =~ /^File:\h+(.+)/m) {
+                    my $basename = basename($1);
+                    $basename =~ s/\.\w+\z//;
+                    $title = $basename;
+                }
+            }
+
+            $title;
+        }
+    );
 }
 
 # cmus daemon
 sub cmus_daemon {
-    my $old_title = '';
 
-    {
-        my $info = `cmus-remote -Q &>/dev/stdout`;
-        $? and die "[!] cmus player is not installed!\n";
+    daemon_loop(
+        sub {
+            my $info = `cmus-remote -Q &>/dev/stdout`;
+            $? and die "[!] cmus player is not installed!\n";
 
-        my @title;
-        if ($info =~ /^tag artist (.+)/m) {
-            push @title, $1;
-        }
-        if ($info =~ /^tag title (.+)/m) {
-            push @title, $1;
-        }
-        else {
-            @title = ();
-            if ($info =~ /^file (.+)/m) {
-                my $basename = basename($1);
-                $basename =~ s{\.\w+\z}{};
-                push @title, $basename;
+            my @title;
+            if ($info =~ /^tag artist (.+)/m) {
+                push @title, $1;
             }
+            if ($info =~ /^tag title (.+)/m) {
+                push @title, $1;
+            }
+            else {
+                @title = ();
+                if ($info =~ /^file (.+)/m) {
+                    my $basename = basename($1);
+                    $basename =~ s{\.\w+\z}{};
+                    push @title, $basename;
+                }
+            }
+
+            @title || die "[!] cmus isn't playing any song...\n";
+
+            join(' ', @title);
         }
-
-        @title || die "[!] cmus isn't playing any song...\n";
-
-        my $title = clear_title(join(' ', @title));
-
-        if ($old_title ne $title) {
-            output_lyrics($title);
-        }
-
-        $old_title = $title;
-        sleep $SLEEP_SECONDS;
-        redo;
-    }
+    );
 }
 
 # playerctl daemon
 sub playerctl_daemon {
-    my $old_title = '';
+    daemon_loop(
+        sub {
+            my $info = `playerctl metadata --format '{{artist}}\n{{title}}\n{{status}}' &>/dev/stdout`;
+            $? and die "[!] playerctl is not installed!\n";
 
-    {
-        my $info = `playerctl metadata --format '{{artist}}\n{{title}}\n{{status}}' &>/dev/stdout`;
-        $? and die "[!] playerctl is not installed!\n";
+            my ($artist, $title, $status) = split /\n/, $info;
 
-        my ($artist, $title, $status) = split /\n/, $info;
+            if ($status ne "Playing") {
+                die "[!] primary playerctl player not playing any song...\n";
+            }
 
-        if ($status ne "Playing") {
-            die "[!] primary playerctl player not playing any song...\n";
+            "$artist $title";
         }
-
-        $title = clear_title("$artist $title");
-
-        if ($old_title ne $title) {
-            output_lyrics($title);
-        }
-
-        $old_title = $title;
-        sleep $SLEEP_SECONDS;
-        redo;
-    }
+    );
 }
 
 # Get the lyrics of a song
