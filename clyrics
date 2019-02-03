@@ -3,10 +3,14 @@
 # Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Updated: 03 March 2018
+# Updated: 03 Februrary 2019
 # Wesbite: http://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
+
+# Contributors:
+#   https://github.com/genomorro - Edgar Uriel Domínguez Espinoza
+#   https://github.com/natezb    - Nate Bogdanowicz
 
 # clyrics works by making a query on Google with the name of a given song,
 # which can also include the artist name. The search is restricted only to
@@ -214,7 +218,9 @@ sub mocp_daemon {
     my $old_title = '';
 
     {
-        my $info = `mocp --info &>/dev/stdout` // die "[!] moc player is not installed!\n";
+        my $info = `mocp --info &>/dev/stdout`;
+        $? and die "[!] moc player is not installed!\n";
+
         my @song = ($info =~ /^Artist:\h+(.+)/m, $info =~ /^SongTitle:\h+(.+)/m);
         my ($title) = join(" ", @song);
 
@@ -248,7 +254,8 @@ sub cmus_daemon {
     my $old_title = '';
 
     {
-        my $info = `cmus-remote -Q &>/dev/stdout` // die "[!] cmus player is not installed!\n";
+        my $info = `cmus-remote -Q &>/dev/stdout`;
+        $? and die "[!] cmus player is not installed!\n";
 
         my @title;
         if ($info =~ /^tag artist (.+)/m) {
@@ -285,15 +292,16 @@ sub playerctl_daemon {
     my $old_title = '';
 
     {
-        my $info = `playerctl metadata --format '{{artist}}\n{{title}}\n{{status}}' &>/dev/stdout`
-            // die "[!] playerctl is not installed!\n";
+        my $info = `playerctl metadata --format '{{artist}}\n{{title}}\n{{status}}' &>/dev/stdout`;
+        $? and die "[!] playerctl is not installed!\n";
+
         my ($artist, $title, $status) = split /\n/, $info;
 
         if ($status ne "Playing") {
             die "[!] primary playerctl player not playing any song...\n";
         }
 
-        my $title = clear_title("$artist $title");
+        $title = clear_title("$artist $title");
 
         if ($old_title ne $title) {
             output_lyrics($title);
