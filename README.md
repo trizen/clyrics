@@ -19,6 +19,7 @@ options:
         -m         : start as a daemon for moc player
         -c         : start as a daemon for cmus player
         -p         : start as a daemon for playerctl media controller
+        -k         : do not quit if player is not playing any song
         -s <int>   : sleep duration between lyrics updates (default: 1)
         -P <dir>   : plugin directory (default: ~/.config/clyrics)
 
