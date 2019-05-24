@@ -59,7 +59,7 @@ if (not -d $plugins_dir and -e "/usr/share/$name") {
 
 my %opt;
 if ($#ARGV != -1 and chr ord $ARGV[0] eq '-') {
-    getopts('hvds:P:mcp', \%opt);
+    getopts('hvds:P:mcpk', \%opt);
 }
 
 # Help
@@ -171,6 +171,7 @@ options:
         -m         : start as a daemon for moc player
         -c         : start as a daemon for cmus player
         -p         : start as a daemon for playerctl media controller
+        -k         : do not quit if player is not playing any song
         -s <int>   : sleep duration between lyrics updates (default: $SLEEP_SECONDS)
         -P <dir>   : plugin directory (default: $plugins_dir)
 
@@ -304,7 +305,7 @@ sub playerctl_daemon {
 
             my ($artist, $title, $status) = split /\n/, $info;
 
-            if ($status ne "Playing") {
+            if ($status ne "Playing" && !exists $opt{k}) {
                 die "[!] primary playerctl player not playing any song...\n";
             }
 
