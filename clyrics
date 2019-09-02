@@ -3,7 +3,7 @@
 # Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Updated: 03 Februrary 2019
+# Updated: 02 September 2019
 # Wesbite: http://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
@@ -37,7 +37,7 @@ use Time::HiRes qw(sleep);
 
 # Name and version
 my $name    = 'clyrics';
-my $version = '0.11';
+my $version = '0.12';
 
 # Debug mode
 my $DEBUG = 0;
