@@ -4,7 +4,7 @@
 # License: GPLv3
 # Created: 12 February 2013
 # Updated: 02 September 2019
-# Wesbite: http://github.com/trizen/clyrics
+# Wesbite: https://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
 
@@ -341,6 +341,16 @@ sub get_lyrics {
 
     state $sites = decode_utf8(join(' OR ', map { "site:$_->{site}" } @plugins));
 
+    require HTTP::Cookies;
+    my $cookies = HTTP::Cookies->new();
+
+    # Consent cookie
+    $cookies->set_cookie(0, "CONSENT", "YES+shp-m.gws-20211116-0-RC2.en+FX+815",
+                         "/", ".google.com", undef, 0, 1, '17' . join('', map { int(rand(10)) } 1 .. 8),
+                         0, {});
+
+    $mech->cookie_jar($cookies);
+
     $mech->get('https://www.google.com/');
     $mech->submit_form(
                        form_number => 1,
@@ -355,6 +365,7 @@ sub get_lyrics {
 
     foreach my $plugin (@plugins) {
         if (defined(my $link = $mech->find_link(url_regex => qr/:\/\/(?:www\.)?\Q$plugin->{site}\E\b/i))) {
+
             my $req  = $mech->get($link->url());
             my $text = $plugin->{code}(scalar $req->decoded_content);
 
