@@ -10,9 +10,20 @@ scalar {
     code => sub {
         my ($content) = @_;
 
-        if ($content =~ m{<div class="lyrics">(.*?)</div>}si) {
+        if ($content =~ m{\bJSON\.parse\('(.*?)'\);}si) {
             my $lyrics = $1;
-            $lyrics =~ s{<.*?>}{}gs;
+
+            $lyrics =~ s/\\(.)/$1/gs;
+
+            $lyrics = eval {
+                require JSON::PP;
+                my $json = JSON::PP->new;
+                my $hash = $json->decode($lyrics);
+                $hash->{songPage}{lyricsData}{body}{html};
+            };
+
+            $lyrics =~ s/<.*?>//gs;
+
             return $lyrics;
         }
 
