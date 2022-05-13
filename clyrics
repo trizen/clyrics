@@ -373,7 +373,8 @@ sub get_lyrics {
             warn $@ if ($DEBUG and $@);
 
             if (defined($text) and length($text) > 50) {
-                $text =~ s/^(?:\h*\R)+\h*//;    # remove leading newlines and spaces
+                $text =~ s/^(?:\h*\R)+\h*//;       # remove leading newlines and spaces
+                $text =~ s{(\R\h*){3,}}{\n\n}g;    # replace 3+ newlines with only 2
                 return unpack 'A*', decode_entities($text);
             }
             else {

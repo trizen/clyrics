@@ -10,8 +10,9 @@ scalar {
     code => sub {
         my ($content) = @_;
 
-        if ($content =~ m{<div id="pagecontent">.*?</script>(.*?)<!-- }si) {
+        if ($content =~ m{<div id="textdiv">(.*?)<div class="noprint"}is) {
             my $lyrics = $1;
+            $lyrics =~ s{<script>(.*?)</script>}{}sg;
             $lyrics =~ s{<.*?>}{}sg;
             return $lyrics;
         }
