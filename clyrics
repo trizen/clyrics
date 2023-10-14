@@ -3,7 +3,7 @@
 # Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Updated: 07 August 2023
+# Updated: 14 October 2023
 # Wesbite: https://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
@@ -35,7 +35,7 @@ use Time::HiRes           qw(sleep);
 
 # Name and version
 my $name    = 'clyrics';
-my $version = '0.14';
+my $version = '0.15';
 
 # Debug mode
 my $DEBUG = 0;
@@ -331,21 +331,22 @@ sub get_lyrics {
     $song_name = join(' ', split(' ', $song_name));
 
     my $mech = WWW::Mechanize->new(
-                                   show_progress => $DEBUG,
-                                   autocheck     => 0,
-                                   agent         => 'Mozilla/5.0 (iPad; CPU OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 '
-                                     . '(KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53',
-                                  );
+                    show_progress => $DEBUG,
+                    autocheck     => 0,
+                    agent => 'Mozilla/5.0 (iPad; CPU OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53',
+    );
 
     state $sites = decode_utf8(join(' OR ', map { "site:$_->{site}" } @plugins));
 
     require HTTP::Cookies;
     my $cookies = HTTP::Cookies->new();
 
-    # Consent cookie
-    $cookies->set_cookie(0, "CONSENT", "YES+srp.gws-20220321-0-RC1.cs+FX+600",
-                         "/", ".google.com", undef, 0, 1, '17' . join('', map { int(rand(10)) } 1 .. 8),
-                         0, {},);
+    my $rand_value = '17' . join('', map { int(rand(10)) } 1 .. 8);
+
+    $cookies->set_cookie(0, "SOCS", "CAISNQgCEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMxMDEwLjAyX3AxGgJ1cyABEgUIYKOy0wU=",
+                         "/", ".google.com", undef, 0, 1, $rand_value, 0, {},);
+
+    $cookies->set_cookie(0, "CONSENT", "PENDING+506", "/", ".google.com", undef, 0, 1, $rand_value, 0, {},);
 
     $mech->cookie_jar($cookies);
 
