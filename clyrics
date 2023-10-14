@@ -29,12 +29,12 @@ use WWW::Mechanize        qw();
 use Encode                qw(decode_utf8);
 use File::Basename        qw(dirname basename);
 use HTML::Entities        qw(decode_entities);
-use File::Spec::Functions qw(catdir rel2abs);
+use File::Spec::Functions qw(catfile catdir rel2abs);
 use Getopt::Std           qw(getopts);
 use Time::HiRes           qw(sleep);
 
 # Name and version
-my $name    = 'clyrics';
+my $pkgname = 'clyrics';
 my $version = '0.15';
 
 # Debug mode
@@ -43,21 +43,35 @@ my $DEBUG = 0;
 # Sleep duration
 my $SLEEP_SECONDS = 1;
 
-# .config directory
-my $xdg_config_home = $ENV{XDG_CONFIG_HOME}
-  || catdir($ENV{HOME} || $ENV{LOGDIR} || (getpwuid($<))[7] || `echo -n ~`, '.config');
+my $home_dir =
+     $ENV{HOME}
+  || $ENV{LOGDIR}
+  || (getpwuid($<))[7]
+  || `echo -n ~`;
+
+my $xdg_config_home = $ENV{XDG_CONFIG_HOME} || "$home_dir/.config";
+my $xdg_cache_home  = $ENV{XDG_CACHE_HOME}  || "$home_dir/.cache";
+
+my $config_dir = "$xdg_config_home/$pkgname";
+my $cache_dir  = "$xdg_cache_home/$pkgname";
+
+my @plugins_dirs;
 
 # Plugins directory
-my $plugins_dir = catdir($xdg_config_home, $name);
+my $plugins_dir = catdir($xdg_config_home, $pkgname);
+
+if (-d $plugins_dir) {
+    push @plugins_dirs, $plugins_dir;
+}
 
 # Check the '/usr/share/' directory
-if (not -d $plugins_dir and -e "/usr/share/$name") {
-    $plugins_dir = "/usr/share/$name";
+if (-d "/usr/share/$pkgname") {
+    push @plugins_dirs, "/usr/share/$pkgname";
 }
 
 my %opt;
 if ($#ARGV != -1 and substr($ARGV[0], 0, 1) eq '-') {
-    getopts('hvds:P:mcpk', \%opt);
+    getopts('hvds:P:mcpkL:', \%opt);
 }
 
 # Help
@@ -95,27 +109,43 @@ if (exists $opt{s}) {
 # Plugins directory
 if (exists $opt{P}) {
     if (defined $opt{P}) {
-        $plugins_dir = rel2abs($opt{P});
+        @plugins_dirs = rel2abs($opt{P});
     }
     else {
         die "error: option '-P' requires an argument!\n";
     }
 }
 
-# When the plugins directory does not exists
-if (not -d $plugins_dir) {
+# Plugins directory
+if (exists $opt{L}) {
+    if (defined $opt{L}) {
+        $cache_dir = rel2abs($opt{L});
+    }
+    else {
+        die "error: option '-L' requires an argument!\n";
+    }
+}
+
+if (not -d $cache_dir) {
+    require File::Path;
+    File::Path::make_path($cache_dir)
+      or die "$0: can't create cache directory `$cache_dir': $!\n";
+}
+
+# When couldn't find any plugin directories
+if (not @plugins_dirs) {
     my $dirname = rel2abs(dirname(rel2abs($0)));
     if (-d (my $dir = catdir($dirname, 'plugins'))) {
-        $plugins_dir = $dir;
+        push @plugins_dirs, $dir;
     }
 }
 
 # Finally, die:
-if (not -d $plugins_dir) {
+if (not @plugins_dirs) {
     die <<"ERR";
-** Directory `$plugins_dir' does not exists!
+** Couldn't find any plugins...
 
-In order to run `$name', please create the required directory and copy the plugin files inside it.
+In order to run `$pkgname', please create the required directory and copy the plugin files inside it.
 
 To load the plugins from other directory, use the following '-P' option.
 
@@ -126,9 +156,12 @@ ERR
 
 # Load the plugins
 my @plugins;
-foreach my $plugin_file (glob("$plugins_dir/*.pl")) {
-    load_plugin($plugin_file, \@plugins);
-}
+{
+    my %seen;
+    foreach my $plugin_file (grep { !$seen{basename($_)}++ } map { glob("$_/*.pl") } @plugins_dirs) {
+        load_plugin($plugin_file, \@plugins);
+    }
+};
 
 @plugins || die "error: can't find any valid plugin in dir: $plugins_dir\n";
 
@@ -171,7 +204,8 @@ options:
         -p         : start as a daemon for playerctl media controller
         -k         : do not quit if player is not playing any song
         -s <int>   : sleep duration between lyrics updates (default: $SLEEP_SECONDS)
-        -P <dir>   : plugin directory (default: $plugins_dir)
+        -P <dir>   : directory containing the clyrics plugins
+        -L <dir>   : directory where to save the lyrics
 
         -d         : activate the debug mode
         -v         : print version and exit
@@ -184,7 +218,7 @@ USAGE
 }
 
 sub output_version {
-    print "$name $version\n";
+    print "$pkgname $version\n";
 }
 
 sub clear_title {
@@ -328,7 +362,23 @@ sub get_lyrics {
 
     $song_name = decode_utf8($song_name);
     $song_name =~ tr/-/ /;
-    $song_name = join(' ', split(' ', $song_name));
+    $song_name = lc(join(' ', split(' ', $song_name)));
+
+    my $file_name = $song_name;
+    $file_name =~ tr{:"*/?\\|}{;'+%!%%};    # "
+    $file_name =~ tr/<>//d;
+    $file_name = substr($file_name, 0, 120);
+    $file_name = catfile($cache_dir, "$file_name.txt");
+
+    # Check if the lyrics exist offline
+    if (-e $file_name) {
+        if (open my $fh, '<:utf8', $file_name) {
+            local $/;
+            my $lyrics = <$fh>;
+            close $fh;
+            return $lyrics;
+        }
+    }
 
     my $mech = WWW::Mechanize->new(
                     show_progress => $DEBUG,
@@ -344,9 +394,9 @@ sub get_lyrics {
     my $rand_value = '17' . join('', map { int(rand(10)) } 1 .. 8);
 
     $cookies->set_cookie(0, "SOCS", "CAISNQgCEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMxMDEwLjAyX3AxGgJ1cyABEgUIYKOy0wU=",
-                         "/", ".google.com", undef, 0, 1, $rand_value, 0, {},);
+                         "/", ".google.com", undef, 0, 1, $rand_value, 0, {});
 
-    $cookies->set_cookie(0, "CONSENT", "PENDING+506", "/", ".google.com", undef, 0, 1, $rand_value, 0, {},);
+    $cookies->set_cookie(0, "CONSENT", "PENDING+506", "/", ".google.com", undef, 0, 1, $rand_value, 0, {});
 
     $mech->cookie_jar($cookies);
 
@@ -355,7 +405,7 @@ sub get_lyrics {
                        form_number => 1,
                        fields      => {
                                   ie => 'UTF-8',
-                                  q  => lc($song_name) . ' ' . $sites,
+                                  q  => $song_name . ' ' . $sites,
                                  },
                       );
 
@@ -374,7 +424,15 @@ sub get_lyrics {
             if (defined($text) and length($text) > 50) {
                 $text =~ s/^(?:\h*\R)+\h*//;       # remove leading newlines and spaces
                 $text =~ s{(\R\h*){3,}}{\n\n}g;    # replace 3+ newlines with only 2
-                return unpack 'A*', decode_entities($text);
+                my $lyrics = unpack('A*', decode_entities($text));
+
+                # Save the lyrics offline
+                if (open my $fh, '>:utf8', $file_name) {
+                    print $fh $lyrics;
+                    close $fh;
+                }
+
+                return $lyrics;
             }
             else {
                 $mech->back();
