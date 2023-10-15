@@ -3,7 +3,7 @@
 # Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Updated: 14 October 2023
+# Updated: 15 October 2023
 # Wesbite: https://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
@@ -35,7 +35,7 @@ use Time::HiRes           qw(sleep);
 
 # Name and version
 my $pkgname = 'clyrics';
-my $version = '0.15';
+my $version = '0.16';
 
 # Debug mode
 my $DEBUG = 0;
@@ -58,10 +58,12 @@ my $cache_dir  = "$xdg_cache_home/$pkgname";
 my @plugins_dirs;
 
 # Plugins directory
-my $plugins_dir = catdir($xdg_config_home, $pkgname);
+{
+    my $plugins_dir = catdir($xdg_config_home, $pkgname);
 
-if (-d $plugins_dir) {
-    push @plugins_dirs, $plugins_dir;
+    if (-d $plugins_dir) {
+        push @plugins_dirs, $plugins_dir;
+    }
 }
 
 # Check the '/usr/share/' directory
@@ -161,9 +163,15 @@ my @plugins;
     foreach my $plugin_file (grep { !$seen{basename($_)}++ } map { glob("$_/*.pl") } @plugins_dirs) {
         load_plugin($plugin_file, \@plugins);
     }
-};
+}
 
-@plugins || die "error: can't find any valid plugin in dir: $plugins_dir\n";
+# Make sure there are no duplicated plugins (keep the first ones)
+{
+    my %seen;
+    @plugins = grep { !$seen{$_->{site}}++ } @plugins;
+}
+
+@plugins || die "error: couldn't find any valid plugins...\n";
 
 # mocp daemon
 if (exists $opt{m}) {
