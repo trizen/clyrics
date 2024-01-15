@@ -136,10 +136,9 @@ if (not -d $cache_dir) {
 
 # When couldn't find any plugin directories
 if (not @plugins_dirs) {
-    my $dirname = rel2abs(dirname(rel2abs($0)));
-    if (-d (my $dir = catdir($dirname, 'plugins'))) {
-        push @plugins_dirs, $dir;
-    }
+    require FindBin;
+    no warnings 'once';    # Name "FindBin::RealBin" used only once: possible typo ...
+    -d && push @plugins_dirs, $_ for catdir $FindBin::RealBin, 'plugins';
 }
 
 # Finally, die:
