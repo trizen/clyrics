@@ -22,6 +22,7 @@ scalar {
                 $hash->{songPage}{lyricsData}{body}{html};
             };
 
+            $lyrics || return;
             $lyrics =~ s/<.*?>//gs;
 
             return $lyrics;
