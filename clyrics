@@ -3,7 +3,7 @@
 # Author : Daniel "Trizen" Șuteu
 # License: GPLv3
 # Created: 12 February 2013
-# Updated: 03 July 2024
+# Updated: 25 October 2024
 # Wesbite: https://github.com/trizen/clyrics
 
 # An extensible lyrics fetcher, with daemon support for cmus and mocp.
@@ -35,7 +35,7 @@ use Time::HiRes           qw(sleep);
 
 # Name and version
 my $pkgname = 'clyrics';
-my $version = '0.16';
+my $version = '0.17';
 
 # Debug mode
 my $DEBUG = 0;
@@ -406,8 +406,7 @@ sub get_lyrics {
                     agent => 'Mozilla/5.0 (iPad; CPU OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53',
     );
 
-
-    $mech->add_header( 'Accept-Language' => "$language;q=0.5" );
+    $mech->add_header('Accept-Language' => "$language;q=0.5");
 
     state $sites = decode_utf8(join(' OR ', map { "site:$_->{site}" } @plugins));
 
@@ -416,9 +415,7 @@ sub get_lyrics {
 
     my $rand_value = '17' . join('', map { int(rand(10)) } 1 .. 8);
 
-    $cookies->set_cookie(0, "SOCS", "CAISNQgCEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMxMDEwLjAyX3AxGgJ1cyABEgUIYKOy0wU=",
-                         "/", ".google.com", undef, 0, 1, $rand_value, 0, {});
-
+    $cookies->set_cookie(0, "SOCS",    "CAI",         "/", ".google.com", undef, 0, 1, $rand_value, 0, {});
     $cookies->set_cookie(0, "CONSENT", "PENDING+506", "/", ".google.com", undef, 0, 1, $rand_value, 0, {});
 
     $mech->cookie_jar($cookies);
@@ -433,7 +430,7 @@ sub get_lyrics {
                       );
 
     # Fake the user-agent to a desktop browser
-    $mech->agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0');
+    $mech->agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0');
 
     foreach my $plugin (@plugins) {
         foreach my $link ($mech->find_all_links(url_regex => qr/:\/\/(?:www\.)?\Q$plugin->{site}\E\b/i)) {

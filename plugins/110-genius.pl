@@ -10,7 +10,7 @@ scalar {
     code => sub {
         my ($content) = @_;
 
-        if ($content =~ m{\bJSON\.parse\('(.*?)'\);}si) {
+        if ($content =~ m{window\.__PRELOADED_STATE__\s*=\s*JSON\.parse\('(.*?)'\);}s) {
             my $lyrics = $1;
 
             $lyrics =~ s/\\(.)/$1/gs;
@@ -25,6 +25,11 @@ scalar {
             $lyrics || return;
             $lyrics =~ s/<.*?>//gs;
 
+            return $lyrics;
+        }
+        elsif ($content =~ m{<div id="lyrics">(.*?)</div>}s) {
+            my $lyrics = $1;
+            $lyrics =~ s/<.*?>//gs;
             return $lyrics;
         }
 
