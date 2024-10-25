@@ -57,6 +57,8 @@ my $cache_dir  = "$xdg_cache_home/$pkgname";
 
 my @plugins_dirs;
 
+my $language = "en-US,en";
+
 # Plugins directory
 {
     my $plugins_dir = catdir($xdg_config_home, $pkgname);
@@ -73,7 +75,7 @@ if (-d "/usr/share/$pkgname") {
 
 my %opt;
 if ($#ARGV != -1 and substr($ARGV[0], 0, 1) eq '-') {
-    getopts('hvds:P:mcpkL:', \%opt);
+    getopts('hvds:P:mcpkL:l:', \%opt);
 }
 
 # Help
@@ -125,6 +127,16 @@ if (exists $opt{L}) {
     }
     else {
         die "error: option '-L' requires an argument!\n";
+    }
+}
+
+# Language selection
+if (exists $opt{l}) {
+    if (defined $opt{l}) {
+        $language = $opt{l};
+    }
+    else {
+        die "error: option '-l' requires a language as an argument! Eg: 'en-US,en'\n";
     }
 }
 
@@ -210,6 +222,7 @@ options:
         -c         : start as a daemon for cmus player
         -p         : start as a daemon for playerctl media controller
         -k         : do not quit if player is not playing any song
+        -l         : specify a language, useful for avoiding translated lyrics
         -s <int>   : sleep duration between lyrics updates (default: $SLEEP_SECONDS)
         -P <dir>   : directory containing the clyrics plugins
         -L <dir>   : directory where to save the lyrics
@@ -392,6 +405,9 @@ sub get_lyrics {
                     autocheck     => 0,
                     agent => 'Mozilla/5.0 (iPad; CPU OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53',
     );
+
+
+    $mech->add_header( 'Accept-Language' => "$language;q=0.5" );
 
     state $sites = decode_utf8(join(' OR ', map { "site:$_->{site}" } @plugins));
 
