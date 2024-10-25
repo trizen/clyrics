@@ -75,7 +75,7 @@ if (-d "/usr/share/$pkgname") {
 
 my %opt;
 if ($#ARGV != -1 and substr($ARGV[0], 0, 1) eq '-') {
-    getopts('hvds:P:mcpkLl:', \%opt);
+    getopts('hvds:P:mcpkL:l:', \%opt);
 }
 
 # Help
@@ -133,7 +133,7 @@ if (exists $opt{L}) {
 # Language selection
 if (exists $opt{l}) {
     if (defined $opt{l}) {
-        $language = rel2abs($opt{l});
+        $language = $opt{l};
     }
     else {
         die "error: option '-l' requires a language as an argument! Eg: 'en-US,en'\n";
